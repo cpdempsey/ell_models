@@ -1,0 +1,75 @@
+\documentclass[11pt]{article}
+
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{ dsfont }
+
+\title{Analysis of linear network models of ELL}
+\author{Conor Dempsey}
+
+\begin{document}
+\maketitle
+
+A very basic linear network model of ELL includes MG cells, output cells, granule cells, with a feedback loop from output cell activity to MG cells that can control a broad spike signal which determines synaptic plasticity at GC to MG cell synapses.
+
+In the simplest case there are no constraints on the signs of any of the parameters or state variables, including synaptic weights and the activities of cells, or the feedback signals.
+
+In the following we discretize time and write everything in linear-algebraic terms. The following are the key variables:
+\begin{itemize}
+	\item $V_{MG}$, the matrix of voltages of the MG cells, size $N_{MG} \times T$
+	\item $S_s$, a matrix of sensory inputs to MG cells, size $N_{MG} \times T$
+	\item $W_b$, the matrix of weights from the granule cell layer to the MG layer, size $N_{GC} \times N_{MG}$
+	\item $G$, the granule cell basis of size $N_{MG} \times T$
+	\item $L$, the matrix of broad spike patterns caused by feedback from output cells to MG cells, size $N_{MG} \times T$
+	\item $W_f$, the matrix of feedback weights from the output cells to the MG cells, size $N_o \times N_{MG}$
+	\item $V_o$, the matrix of voltages of the output cells, size $N_o \times T$
+	\item $W_n$, the matrix of weights from the MG cells to the output cells, size $N_{MG} \times N_o$
+	\item $S_o$, the matrix of sensory inputs to the output cells, size $N_o \times T$
+	\item $k_r$, the rate of synaptic plasticity
+	\item $\beta$, the ratio of associative depression to non-associative potentiation
+\end{itemize}
+
+The equations of the model are as follows:
+\begin{eqnarray*}
+		V_{MG} &=& S_s + W_b^\intercal \, G \\
+		L &=& W_f^\intercal \,V_o \\
+		V_o &=& W_n^\intercal \,V_{MG} + S_o \\
+		dW_b &=& k_r \left( G\,\mathds{1} - \beta GL \right )
+\end{eqnarray*}
+
+The conditions for equilibrium are that $dW_b =0$. This occurs when
+\begin{eqnarray*}
+	G\left( \mathds{1} - \beta L \right) &=& 0 \\ 
+	\implies L &=& \frac{1}{\beta}
+\end{eqnarray*}
+
+which means that each learning signal must be constant at a level given by $1/ \beta$, or that $\mathds{1} - \beta L$ is in the null-space of $G$, which corresponds to a pattern that cannot be cancelled given the structure of the granule cell basis. 
+
+Given this very reduced model we can ask what happens if there is no sensory input. In the usual models of ELL we have a single principal cell and we expect its activity to go to a flat line in the absence of any sensory input. What does the baseline condition look like in this model?
+
+At equilibrium we have that $L_{eq} = 1 / \beta$. We can solve for the equilibrium values of the other variables:
+\begin{eqnarray*}
+	V_{MG} &=& W_b^\intercal \, G \\
+	V_o &=& W_n^\intercal \, W_b^\intercal G \\
+	L_{eq} &=& W_f^\intercal \, W_n^\intercal \, W_b^\intercal \, G
+\end{eqnarray*}
+The last equation can be written as:
+\begin{eqnarray*}
+	L_{eq} = \left( W_f^\intercal \, W_n^\intercal \right) \, \left( W_b^\intercal \, G \right)
+\end{eqnarray*}
+The second factor here, $W_b^\intercal \, G$, is the set of granule cell, command-only inputs to the MG cells, it is of size $N_{MG} \times T$. The first factor is an effective feedback matrix from the MG cell population onto itself, and determines the contribution of each MG cell to the broad spike pattern of every other MG cell, it is of size $N_{MG} \times N_{MG}$.
+
+
+
+
+\end{document}
+
+
+
+
+
+
+
+
+
+

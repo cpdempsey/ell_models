@@ -1,0 +1,69 @@
+\documentclass[11pt]{article}
+
+\usepackage{graphicx}
+\usepackage{ bbold }
+\usepackage{amsmath}
+
+\begin{document}
+
+\title{Simple network model of Ell}
+
+
+The usual models of cancellation in ELL include a single MG cell or output cell, receiving inputs from a population of granule cells via plastic synapses obeying an anti-Hebbian rule.
+Discretizing time and assuming linearity (or that we are near the linear regime) we have the following equation for the voltage:
+\begin{equation}
+	V = S + Gw
+\end{equation}
+
+and the weights follow the dynamics:
+
+\begin{equation}
+	dw= \Delta_{+} G\mathbb{1}_T - \Delta_{-} GV^{T}
+\end{equation}
+
+We make a simple extension of this model by including multiple MG cells and allowing the output (voltage) of each MG cell influence, via a feedback matrix, the learning signal for every other MG cell in the network. Usually the learning signal for a given cell (i.e. broad spike rate) is taken to be the voltage of that cell. Here, instead, the learning signal could be the voltage of some other cell, or in general any linear combination of the voltages of all the cells in the network. 
+
+Our equations become:
+\begin{equation}
+	V_{i,\,:} = S_{i\,:} + Gw_{i\,:}
+\end{equation}
+\begin{equation}
+	dw_{i,\,:} = \Delta_{+} G\mathbb{1}_T - \Delta_{-} GL_{i,\,:}^{T}
+\end{equation}
+where now $L$ is a learning signal determined by the feedback vector onto this cell, $F_{i,\,:}$:
+\begin{equation}
+	L_{i,\,:} = F_{i,\,:}V
+\end{equation}
+
+In this model $V$ is a matrix of the voltages of all MG cells across time, there is one weight vector for each MG cell, and there is on feedback vector for each MG cell. We can combine the above equations into a matrix form for the responses and weight dynamics of all cells and synapses:
+\begin{equation}
+		V = S + GW
+\end{equation}
+\begin{equation}
+	dW = \Delta_{+} G\mathbb{1} - \Delta_{-} GL
+\end{equation}
+\begin{equation}
+	L = FV
+\end{equation}
+
+We can substitute in for the voltage and ask what are the solutions permitted by the steady state condition that all weights stop changing. This ignores the possibility that there are solutions where the weights changes continuously in a bounded fashion but nonetheless provide some useful constant output.
+\begin{equation}
+	dW = \Delta_{+} G\,\mathbb{1} - \Delta_{-} G\left[ S + GW \right] F
+\end{equation}
+$dW =0 $ implies
+\begin{eqnarray*}
+	\Delta_{+} G\,\mathbb{1} &=& \Delta_{-} G\left[ S + GW \right] F \\
+	\implies \frac{\Delta_{+}}{\Delta_{-}} \, \mathbb{1} &=& \left[ S + GW \right] F
+\end{eqnarray*}
+
+This last equation shows that in this model for the weights to stop changing the broad spikes must all cancel, and thus the total feedback signal onto each cell must be constant. However, because this feedback signal is composed of a linear combination of the command-triggered voltages of all other MG cells it may be that the output of each MG cell is itself not flat, i.e. the MG voltages need not cancel. 
+
+
+
+
+
+
+
+
+
+\end{document}
