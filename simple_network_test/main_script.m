@@ -53,7 +53,7 @@ F = [0.2 0.9;
     -0.2 0.2];
 
 % sensory input to be cancelled
-S = get_amp_response(max_freq);
+S = 0*get_amp_response(max_freq);
 S = repmat(S,[Nmg 1]);
 
 % membrane voltage of the MG cells
@@ -139,41 +139,6 @@ setPaperPos([177 58 933 740]);
 
 figure;
 plotyy(1:Nruns,residual,1:Nruns,wnorm); 
-
-%% look at response to some new signal post learning
-
-Snew = -S;
-Vmg = Snew' + gcBasis'*W;
-
-L = Vmg*F;
-negI = gcBasis'*W;
-
-figure;
-subplot(4,2,[1 3])
-plot(Snew(1,:)); hold on
-plot(negI(:,1));
-plot(Snew(1,:)' + negI(:,1));
-set(gca,'tickdir','out','box','off');
-
-subplot(4,2,[5 7]);
-plot(Snew(2,:)); hold on
-plot(negI(:,2));
-plot(Snew(2,:)' + negI(:,2));
-set(gca,'tickdir','out','box','off');
-
-subplot(4,2,[2 4]);
-plot(L); 
-set(gca,'tickdir','out','box','off');
-
-subplot(4,2,[6 8]);
-plot(mean(Snew)); hold on
-plot(mean(Vmg,2))
-
-setPaperPos([177 58 933 740]);
-
-
-
-
 
 
 

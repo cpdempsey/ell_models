@@ -61,4 +61,4 @@ end
 % frequency limited basis to speed up simulation of learning
 [convspikes_limit, max_freq] = freqLimit(convspikes_full,dt/1000);
 
-save([pth '/population_summary.mat'],'convspikes_full','convspikes_limit','sptimes_firing','raster_full','celltypes_firing','summedSpikes','max_freq','-v7.3');
+% save([pth '/population_summary.mat'],'convspikes_full','convspikes_limit','sptimes_firing','raster_full','celltypes_firing','summedSpikes','max_freq','-v7.3');

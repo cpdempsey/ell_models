@@ -22,7 +22,7 @@ syn_kernel      = struct('tau_on', 0.005, 'tau_off', 0.01,'dt',5e-05);
 pth = './generated_GCs/';
 
 % load the basis
-[~, gc_rates, ~, ~, summedSpikes, ~, max_freq] = getPopulationResponse(pth,syn_kernel);
+[~, gc_rates, ~, meanSpikes, summedSpikes, ~, max_freq] = getPopulationResponse(pth,syn_kernel);
 
 %% do learnnig
 

@@ -1,10 +1,10 @@
 function  wd_init = initWeights(drop_limit,ubs,lbs,lambda,target)
 
-options = optimoptions('fmincon','GradObj','on','display','iter','maxiter',50);
+options = optimoptions('fmincon','GradObj','on','display','iter','maxiter',5);
 
 % drop
 G = drop_limit;
-w0 = 1+randn(size(G,2),1);
+w0 = 0.01+randn(size(G,2),1);
 c = target*ones(size(G,1),1);
 ub = ubs*ones(size(w0));
 lb = lbs*ones(size(w0));

@@ -7,7 +7,7 @@ set(0,'DefaultLineLinewidth',3)
 set(0,'defaultaxesfontsize',24);
 
 rmpath(genpath('~/Documents/MATLAB/'));
-cd('/Users/seigen/Documents/MATLAB/ELL_network_project');
+cd('/Users/seigen/Documents/MATLAB/ell_models');
 addpath(genpath('./'));
 
 %% get a summary of the GC population activity

@@ -21,7 +21,7 @@ kernel_slow         = 1/(GC_model.tau_s_slow - GC_model.tau_m)*(exp(-tran/GC_mod
 spikes.kernel_fast  = kernel_fast;
 spikes.kernel_slow  = kernel_slow;
 
-parfor ii = 1:N
+for ii = 1:N
     
     GC_models{ii} = initGCModel;
       

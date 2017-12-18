@@ -24,13 +24,96 @@ for ii=1:length(GC_model.mf_input)
 end
 
 
-GC_spike_times=[];
-modeltrace=GC_model.El*ones(1,tsteps*1.5);
+inputs(contains(GC_model.modeltype,'pause'),:) = ...
+    circshift(inputs(contains(GC_model.modeltype,'pause'),:),[0 GC_model.jitter]);
 
 [spikes.channels, spikes.sptimes]       = find(inputs);
 [spikes.sptimes, spikes.chan_id]        = unique(spikes.sptimes);
 
 spikes = addEPSPnoise(spikes,GC_model);       % add noise to EPSP size!
+
+GC_spike_times=[];
+
+
+% adjustments for cells that have pause or tonic input:
+% if cell gets a tonic or pause input simulate some pre-command input
+% to get it up to baseline correctly and avoid a period of integration
+% to baseline after the command. I'm arbitrarily doing this for 0.5*tsteps
+% because that's about enough time to get up to baseline for most cells
+% I think, given time constants
+
+
+%%%%%%%%%%%%
+%%%%%%%%%%%%
+
+% This is the new section %
+
+if  any(contains(GC_model.modeltype,'pause') | contains(GC_model.modeltype,'tonic'))
+        
+    GC_model.tonic = true;
+    
+    pre_length = 25/dt; % length of pre-command integration time to get to baseline
+    
+    ltemp = tsteps*1.5+pre_length;
+
+    modeltrace = GC_model.El*ones(1,ltemp);
+    
+    % first find the pause and/or tonic channels
+    tp_channels = find(contains(GC_model.modeltype,'pause') |  contains(GC_model.modeltype,'tonic') ) ;
+    
+    spikes_pre.sptimes = [];
+    spikes_pre.channels = [];
+    spikes_pre.spscale = [];
+    
+    for kk = 1:length(tp_channels)
+        
+        sp_int = diff(find(inputs(tp_channels(kk),:)));
+        if ~isempty(sp_int)
+            sp_temp = randsample(sp_int,1,true);
+            
+            while sp_temp < pre_length
+                sp_temp = [sp_temp (sp_temp(end)+randsample(sp_int,1,true))];
+            end
+        else
+            sp_temp = [];
+        end
+        spikes_pre.sptimes  = [spikes_pre.sptimes sp_temp];
+        spikes_pre.channels = [spikes_pre.channels tp_channels(kk)*ones(1,length(sp_temp))];
+        
+        spikes_pre.spscale = [spikes_pre.spscale randsample(spikes.spscale,length(sp_temp),true)'];
+        
+    end
+    
+    spikes_pre.chan_id = 1:length(spikes_pre.sptimes);
+    
+    spikes_pre.kernel_fast = spikes.kernel_fast;
+    spikes_pre.kernel_slow = spikes.kernel_slow;
+    
+    for jj=1:length(spikes_pre.sptimes)
+        
+        updatewin               = spikes_pre.sptimes(jj)+1:min(spikes_pre.sptimes(jj)+win/dt,ltemp); %bins of trace to update
+        spwin                   = 1:min(ltemp-spikes_pre.sptimes(jj),win/dt);                   %bins of EPSP to use for that update
+        EPSP                    = compute_EPSP(GC_model,spikes_pre,jj);                              %returns EPSP adjusted by apropriate weight (fast + slow components)
+        
+        modeltrace(updatewin)   = modeltrace(updatewin) + EPSP(spwin);
+        
+    end
+    
+    modeltrace = modeltrace(pre_length+1:end);
+
+else
+    modeltrace=GC_model.El*ones(1,tsteps*1.5);
+end
+
+%     modeltrace=GC_model.El*ones(1,tsteps*1.5);
+
+
+%%%%%%%%%%
+%%%%%%%%%%
+
+%     modeltrace=GC_model.El*ones(1,tsteps*1.5);
+
+
 
 % now simulate!
 i=1;

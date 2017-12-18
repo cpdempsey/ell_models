@@ -1,8 +1,8 @@
-cd('~/Documents/MATLAB/ELL_network_project/');
-
-clear all
-
-% where to save generated GC data
+% cd('~/Documents/MATLAB/ell_models/');
+% 
+% clear all
+% 
+% % where to save generated GC data
 savepth = './';
 expdir  = 'generated_GCs';
 expname = expdir;
@@ -31,8 +31,8 @@ GCparams.Wsparse(170,:)=0; %that last pause GC is trouble!
 
 %% make the granule cells (this will take a minute)
 
-N = 20000;
-[GC_models, celltypes] = generateGCPopAnn(N,rspstore,mftypes,GCparams,MF_indices);
+% N = 20000;
+% [GC_models, celltypes] = generateGCPopAnn(N,rspstore,mftypes,GCparams,MF_indices);
 
 %% simulate the granule cells (this will take many minutes)
 
@@ -65,7 +65,10 @@ spikes_per_command = zeros(N,1);
 activecount = 0;
 
 % now loop over batches and cells
-for rep = 1:N/batch_size
+
+for rep = 1 % :N/batch_size
+    
+    tic 
     
     cellnames       = celltypes((rep-1)*batch_size + 1 : rep*batch_size);
     meanSpikes      = zeros(batch_size, tsteps);
@@ -76,7 +79,7 @@ for rep = 1:N/batch_size
     
     waitbar(rep / (N/batch_size));
 
-    % use parfor here if you want
+    % use  here if you want
     for ii=1:batch_size
         
         [raster, vm{ii}]          = simulate_spike_raster(GC_models_batch{ii}, rspstore, spikes, num_trials);
@@ -95,6 +98,10 @@ for rep = 1:N/batch_size
     end
     
     meanSpikes = sparse(meanSpikes);
+    
+    ttaken = toc;
+    
+    disp(['time: ' num2str(ttaken) ', iter: ' num2str(rep)]);
     
     % use this commented command if you want to save individual spiking
     % trials from the simulated GCs (you will need this Abby, you probably
