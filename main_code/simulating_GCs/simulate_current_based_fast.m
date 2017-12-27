@@ -48,18 +48,20 @@ GC_spike_times=[];
 
 % This is the new section %
 
-if  any(contains(GC_model.modeltype,'pause') | contains(GC_model.modeltype,'tonic'))
-        
+if  any(spiked_early)  %any(contains(GC_model.modeltype,{'pause','tonic'}))
+    GC_spike_times=[];
+
     GC_model.tonic = true;
     
-    pre_length = 25/dt; % length of pre-command integration time to get to baseline
+    pre_length = 50/dt; % length of pre-command integration time to get to baseline
     
-    ltemp = tsteps*1.5+pre_length;
-
+    ltemp = tsteps+pre_length;
+    
     modeltrace = GC_model.El*ones(1,ltemp);
-    
+    noise_inst = noise_level/sqrt(dt/GC_model.tau_m)*randn(size(modeltrace));   
+    modeltrace = modeltrace + noise_inst;
     % first find the pause and/or tonic channels
-    tp_channels = find(contains(GC_model.modeltype,'pause') |  contains(GC_model.modeltype,'tonic') ) ;
+    tp_channels = find(spiked_early);%find(contains(GC_model.modeltype,{'pause','tonic'})) ;
     
     spikes_pre.sptimes = [];
     spikes_pre.channels = [];
@@ -67,52 +69,90 @@ if  any(contains(GC_model.modeltype,'pause') | contains(GC_model.modeltype,'toni
     
     for kk = 1:length(tp_channels)
         
-        sp_int = diff(find(inputs(tp_channels(kk),:)));
+                if contains(GC_model.modeltype{tp_channels(kk)},{'tonic'})
+                    sp_int = diff(find(inputs(tp_channels(kk),:)));
+                else
+                    sp_int = diff(find(inputs(tp_channels(kk),1:abs(min_t/dt))));
+                end
         if ~isempty(sp_int)
-            sp_temp = randsample(sp_int,1,true);
             
-            while sp_temp < pre_length
-                sp_temp = [sp_temp (sp_temp(end)+randsample(sp_int,1,true))];
+            sp_temp = sp_int(randi(length(sp_int)));
+%             sp_temp = randsample(sp_int,1,true);
+            
+            while sp_temp(end) < pre_length
+                sp_temp = [sp_temp sp_temp(end)+sp_int(randi(length(sp_int)))];
             end
+            sp_temp = sp_temp(1:end-1);
         else
             sp_temp = [];
         end
         spikes_pre.sptimes  = [spikes_pre.sptimes sp_temp];
         spikes_pre.channels = [spikes_pre.channels tp_channels(kk)*ones(1,length(sp_temp))];
+        [spikes_pre.sptimes, spikes_pre.chan_id] = unique(spikes_pre.sptimes);
         
         spikes_pre.spscale = [spikes_pre.spscale randsample(spikes.spscale,length(sp_temp),true)'];
         
     end
     
-    spikes_pre.chan_id = 1:length(spikes_pre.sptimes);
-    
+    spikes_pre.chan_id = spikes_pre.chan_id';
+    spikes_pre.sptimes = spikes_pre.sptimes';
+    spikes_pre.channels = spikes_pre.channels';
+    spikes_pre.spscale = spikes_pre.spscale';
     spikes_pre.kernel_fast = spikes.kernel_fast;
     spikes_pre.kernel_slow = spikes.kernel_slow;
     
-    for jj=1:length(spikes_pre.sptimes)
-        
-        updatewin               = spikes_pre.sptimes(jj)+1:min(spikes_pre.sptimes(jj)+win/dt,ltemp); %bins of trace to update
-        spwin                   = 1:min(ltemp-spikes_pre.sptimes(jj),win/dt);                   %bins of EPSP to use for that update
-        EPSP                    = compute_EPSP(GC_model,spikes_pre,jj);                              %returns EPSP adjusted by apropriate weight (fast + slow components)
-        
-        modeltrace(updatewin)   = modeltrace(updatewin) + EPSP(spwin);
-        
+i=1;
+while i<=length(spikes_pre.sptimes)
+    %add the next EPSP to the GC trace
+    updatewin               = spikes_pre.sptimes(i)+1:min(spikes_pre.sptimes(i)+win/dt,ltemp); %bins of trace to update
+    spwin                   = 1:min(ltemp-spikes_pre.sptimes(i),win/dt);                   %bins of EPSP to use for that update
+    EPSP                    = compute_EPSP(GC_model,spikes_pre,i);                              %returns EPSP adjusted by apropriate weight (fast + slow components)
+    modeltrace(updatewin)   = modeltrace(updatewin) + EPSP(spwin);
+
+    %did the new EPSP cause a spike?
+    if(i<length(spikes_pre.sptimes)&&(spikes_pre.sptimes(i+1)-spikes_pre.sptimes(i))<length(updatewin))
+        GCspike = find(modeltrace(updatewin(1:spikes_pre.sptimes(i+1)-spikes_pre.sptimes(i)))>thr,1); %only look in window before next external spike
+    else
+        GCspike = find(modeltrace(updatewin)>thr,1);
     end
     
-    modeltrace = modeltrace(pre_length+1:end);
+    %if it did:
+    count=0;
+    while((~isempty(GCspike)))
+        count=count+1;        
+        GCspike = GCspike + spikes_pre.sptimes(i);          %convert GCspike to an absolute time
+        GC_spike_times = [GC_spike_times GCspike-1];    %add it to our record of spikes
+        modeltrace(GCspike-1:end)     = GC_model.El;   %and reset the GC to El from spike time onwards
+        noise_inst = noise_level/sqrt(dt/GC_model.tau_m)*randn(size(modeltrace(GCspike-1:end)));   
+        modeltrace(GCspike-1:end) = modeltrace(GCspike-1:end) + noise_inst;
 
-else
-    modeltrace=GC_model.El*ones(1,tsteps*1.5);
-end
+        GCspike = GCspike+GC_model.tRefrac;
 
-%     modeltrace=GC_model.El*ones(1,tsteps*1.5);
-
-
-%%%%%%%%%%
-%%%%%%%%%%
-
-%     modeltrace=GC_model.El*ones(1,tsteps*1.5);
-
+        if GCspike<ltemp
+            
+            newinput                = recompute_EPSP(GC_model,GCspike,spikes_pre); 
+            updatewin               = GCspike+1:min(GCspike+length(newinput),length(modeltrace));
+            spwin                   = 1:min(length(newinput),length(modeltrace)-GCspike);
+            modeltrace(updatewin)   = modeltrace(updatewin) + newinput(spwin);
+               
+            i = find(spikes_pre.sptimes>GCspike+1,1);   %find the next MF spike
+            if(isempty(i))                          %if there are no spikes to come, things are easy
+                i = length(spikes_pre.sptimes)+1;
+                GCspike = find(modeltrace(spikes_pre.sptimes(end):max(updatewin))>thr,1)';
+            else                                    %otherwise only look in window before next spike
+                GCspike = find(modeltrace(spikes_pre.sptimes(i-1):spikes_pre.sptimes(i))>thr,1)';
+            end
+            
+            i = i-1;
+            
+        else %and if we've reached the end of our simulation, empty GCspike so we can exit the while loop!
+            GCspike=[];
+        end
+    end
+    i=i+1;  
+end    
+    
+%%
 
 
 % now simulate!
