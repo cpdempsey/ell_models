@@ -18,6 +18,22 @@ for i=1:(length(GC_model.Ws)/2)
         
         delta_baseline = delta_baseline + fast_change + slow_change;
     end
+    
+    if(sum(MF_indices.pause==GC_model.mf_input(i)))
+        sptrain     = find(draw_MF_input(rspstore{GC_model.mf_input(i)}));
+        ISIs        = diff(sptrain);
+        [~,largest_interval] = max(ISIs);
+        ISIs = ISIs(largest_interval+1:end);
+        meanISI     = mean(ISIs);  %in dt's
+        
+        pause_sc    = 1/(meanISI*dt); %this is the height of the equivalent rectangle of the spike train in sptrain
+        
+        fast_change = sum(spikes.kernel_fast*dt)*pause_sc*GC_model.Ws(i);
+        slow_change = sum(spikes.kernel_slow*dt)*pause_sc*GC_model.Ws(i+(length(GC_model.Ws)/2));
+        
+        delta_baseline = delta_baseline + fast_change + slow_change;
+    end
+    
 end
 
 new_thresh = GC_model.v_thresh + delta_baseline;
