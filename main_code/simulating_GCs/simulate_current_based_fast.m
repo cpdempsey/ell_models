@@ -14,11 +14,13 @@ thr         = GC_model.v_thresh;
 
 % select mossy fibre inputs at random from the cell's input types
 inputs     = zeros(length(GC_model.mf_input),tsteps);
+spiked_early = zeros(1,length(GC_model.mf_input));
 for ii=1:length(GC_model.mf_input)
     if(GC_model.mf_input(ii))
         if(rand(1)<=GC_model.MF_prob(ii))
             temp = draw_MF_input(rspstore{GC_model.mf_input(ii)});
             inputs(ii,:) = temp;
+            spiked_early(ii) = nnz(temp(:,1:floor((-min_t-5)/dt)));
         end
     end
 end
@@ -58,8 +60,6 @@ if  any(spiked_early)  %any(contains(GC_model.modeltype,{'pause','tonic'}))
     ltemp = tsteps+pre_length;
     
     modeltrace = GC_model.El*ones(1,ltemp);
-    noise_inst = noise_level/sqrt(dt/GC_model.tau_m)*randn(size(modeltrace));   
-    modeltrace = modeltrace + noise_inst;
     % first find the pause and/or tonic channels
     tp_channels = find(spiked_early);%find(contains(GC_model.modeltype,{'pause','tonic'})) ;
     
@@ -123,8 +123,6 @@ while i<=length(spikes_pre.sptimes)
         GCspike = GCspike + spikes_pre.sptimes(i);          %convert GCspike to an absolute time
         GC_spike_times = [GC_spike_times GCspike-1];    %add it to our record of spikes
         modeltrace(GCspike-1:end)     = GC_model.El;   %and reset the GC to El from spike time onwards
-        noise_inst = noise_level/sqrt(dt/GC_model.tau_m)*randn(size(modeltrace(GCspike-1:end)));   
-        modeltrace(GCspike-1:end) = modeltrace(GCspike-1:end) + noise_inst;
 
         GCspike = GCspike+GC_model.tRefrac;
 
