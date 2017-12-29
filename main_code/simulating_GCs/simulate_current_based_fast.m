@@ -88,19 +88,18 @@ if  any(spiked_early)  %any(contains(GC_model.modeltype,{'pause','tonic'}))
         end
         spikes_pre.sptimes  = [spikes_pre.sptimes sp_temp];
         spikes_pre.channels = [spikes_pre.channels tp_channels(kk)*ones(1,length(sp_temp))];
-        [spikes_pre.sptimes, spikes_pre.chan_id] = unique(spikes_pre.sptimes);
-        
-        spikes_pre.spscale = [spikes_pre.spscale randsample(spikes.spscale,length(sp_temp),true)'];
         
     end
+    [~, Isort] = (sort(spikes_pre.sptimes));
+    spikes_pre.sptimes = (spikes_pre.sptimes(Isort))';
+    spikes_pre.channels = (spikes_pre.channels(Isort))';
+    [spikes_pre.sptimes, spikes_pre.chan_id] = unique(spikes_pre.sptimes);    
+    spikes_pre.spscale = ones(size(spikes_pre.sptimes));
     
-    spikes_pre.chan_id = spikes_pre.chan_id';
-    spikes_pre.sptimes = spikes_pre.sptimes';
-    spikes_pre.channels = spikes_pre.channels';
-    spikes_pre.spscale = spikes_pre.spscale';
     spikes_pre.kernel_fast = spikes.kernel_fast;
     spikes_pre.kernel_slow = spikes.kernel_slow;
     
+ 
 i=1;
 while i<=length(spikes_pre.sptimes)
     %add the next EPSP to the GC trace

@@ -7,7 +7,7 @@ delta_baseline = 0;
 dt=GC_model.dt;
 
 for i=1:(length(GC_model.Ws)/2)
-    if  ismember(GC_model.mf_input(i),MF_indices.tonic)
+    if  ismember(GC_model.mf_input(i),MF_indices.tonic) %|| ismember(GC_model.mf_input(i),MF_indices.pause)
         trnum = randi(size(rspstore{GC_model.mf_input(i)},1));
         input = rspstore{GC_model.mf_input(i)}(trnum,:);
         sptrain     = find(input);
@@ -28,7 +28,7 @@ for i=1:(length(GC_model.Ws)/2)
         sptrain     = find(input);
         ISIs        = diff(sptrain);
         [~,largest_interval] = max(ISIs);
-        ISIs = ISIs(largest_interval+1:end);
+        ISIs(largest_interval) =[];
         meanISI     = mean(ISIs);  %in dt's
         if isnan(meanISI)
             continue
